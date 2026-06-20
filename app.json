@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "Puraraz Mobile",
+    "slug": "puraraz-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTabletMode": true,
+      "bundleIdentifier": "com.puraraz.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.puraraz.mobile"
+    },
+    "web": {
+     
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Se necesita acceso a la galería para subir fotos de mortandades",
+          "cameraPermission": "Se necesita acceso a la cámara"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Se necesita ubicación para registrar GPS"
+        }
+      ],
+      "expo-router"
+    ]
+  }
+}
