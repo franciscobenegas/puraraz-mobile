@@ -1,14 +1,14 @@
 import { create } from 'zustand';
-import { Usuario } from '@types/index';
+import { LoginUser } from '@/types/index';
 import { authService } from '@services/auth';
 
 interface AuthStore {
-  usuario: Usuario | null;
+  usuario: LoginUser | null;
   token: string | null;
   isLoading: boolean;
   error: string | null;
 
-  login: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   restoreToken: () => Promise<void>;
   setError: (error: string | null) => void;
@@ -20,12 +20,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isLoading: false,
   error: null,
 
-  login: async (username: string, password: string) => {
+  login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await authService.login({ username, password });
+      const response = await authService.login({ email, password });
       set({
-        usuario: response.usuario,
+        usuario: response.user,
         token: response.token,
         isLoading: false,
       });

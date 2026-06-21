@@ -1,13 +1,15 @@
 {
   "expo": {
-    "name": "Puraraz Mobile",
+    "name": "Pura Raza",
     "slug": "puraraz-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./src/assets/icon.png",
     "splash": {
+      "image": "./src/assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2D6A4F"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -18,13 +20,17 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#2D6A4F"
       },
-      "package": "com.puraraz.mobile"
+      "package": "com.puraraz.mobile",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
-    "web": {
-     
-    },
+    "web": {},
     "plugins": [
       [
         "expo-image-picker",
@@ -40,6 +46,13 @@
         }
       ],
       "expo-router"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "17049e21-a22a-48f6-b59b-271af321cd13"
+      }
+    },
+    "owner": "fbenegas"
   }
 }

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Mortandad, Categoria, CausaMortandad, Potrero, Propietario } from '@types/index';
+import { Mortandad, Categoria, CausaMortandad, Potrero, Propietario } from '@/types/index';
 import {
   mortandadService,
   categoriaService,
@@ -59,8 +59,10 @@ export const useMortandadStore = create<MortandadStore>((set) => ({
       const nuevaMortandad = await mortandadService.crear(data);
       set((state) => ({
         mortandades: [nuevaMortandad, ...state.mortandades],
-        isLoading: false,
       }));
+      // Recarga categorías para reflejar el decremento que hace el backend
+      const categorias = await categoriaService.listar();
+      set({ categorias, isLoading: false });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al crear mortandad';
       set({ error: errorMessage, isLoading: false });
@@ -138,21 +140,16 @@ export const useMortandadStore = create<MortandadStore>((set) => ({
     set({ isLoading: true });
     try {
       await Promise.all([
-        await mortandadService.listar().then((mortandades) =>
-          set({ mortandades })
-        ),
-        await categoriaService.listar().then((categorias) => set({ categorias })),
-        await causaMortandadService.listar().then((causasMortandad) =>
-          set({ causasMortandad })
-        ),
-        await potreroService.listar().then((potreros) => set({ potreros })),
-        await propietarioService.listar().then((propietarios) =>
-          set({ propietarios })
-        ),
+        mortandadService.listar().then((mortandades) => set({ mortandades })),
+        categoriaService.listar().then((categorias) => set({ categorias })),
+        causaMortandadService.listar().then((causasMortandad) => set({ causasMortandad })),
+        potreroService.listar().then((potreros) => set({ potreros })),
+        propietarioService.listar().then((propietarios) => set({ propietarios })),
       ]);
-      set({ isLoading: false });
     } catch (error) {
-      console.error('Error al cargar datos:', error);
+      const msg = error instanceof Error ? error.message : 'Error al cargar datos';
+      set({ error: msg });
+    } finally {
       set({ isLoading: false });
     }
   },

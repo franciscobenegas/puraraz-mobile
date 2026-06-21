@@ -1,5 +1,16 @@
 const { getDefaultConfig } = require("expo/metro-config");
+const path = require("path");
 
 const config = getDefaultConfig(__dirname);
+
+config.resolver.alias = {
+  "@": path.resolve(__dirname, "src"),
+  "@components": path.resolve(__dirname, "src/components"),
+  "@screens": path.resolve(__dirname, "src/screens"),
+  "@services": path.resolve(__dirname, "src/services"),
+  "@stores": path.resolve(__dirname, "src/stores"),
+  "@utils": path.resolve(__dirname, "src/utils"),
+  "@assets": path.resolve(__dirname, "src/assets"),
+};
 
 module.exports = config;

@@ -3,44 +3,39 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
   Alert,
+  Image,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Input } from '@components/Input';
 import { Button } from '@components/Button';
 import { useAuthStore } from '@stores/authStore';
-import { Colors, Spacing, Typography } from '@utils/theme';
+import { Colors, Spacing, BorderRadius, Typography } from '@utils/theme';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login, isLoading, error } = useAuthStore();
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
-
-    if (!username.trim()) {
-      newErrors.username = 'El usuario es requerido';
-    }
-
-    if (!password.trim()) {
-      newErrors.password = 'La contraseña es requerida';
-    }
-
+    if (!email.trim()) newErrors.email = 'El email es requerido';
+    if (!password.trim()) newErrors.password = 'La contraseña es requerida';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleLogin = async () => {
     if (!validateForm()) return;
-
     try {
-      await login(username, password);
+      await login(email, password);
       router.replace('/(app)');
     } catch (err) {
       Alert.alert('Error', error || 'Error al iniciar sesión');
@@ -49,104 +44,165 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={styles.container.backgroundColor} />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.content}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Puraraz Mobile</Text>
-          <Text style={styles.subtitle}>Gestión de Ganadería</Text>
-        </View>
-
-        <View style={styles.form}>
-          <Input
-            label="Usuario"
-            placeholder="Tu usuario"
-            value={username}
-            onChangeText={setUsername}
-            editable={!isLoading}
-            error={errors.username}
-          />
-
-          <Input
-            label="Contraseña"
-            placeholder="Tu contraseña"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!isLoading}
-            error={errors.password}
-          />
-
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorMessage}>{error}</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          <View style={styles.topSection}>
+            <View style={styles.logoWrapper}>
+              <Image
+                source={require('@assets/logo.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
-          )}
+            <Text style={styles.appName}>Pura Raza</Text>
+            <Text style={styles.tagline}>Gestión de Ganadería</Text>
+          </View>
 
-          <Button
-            title="Iniciar Sesión"
-            onPress={handleLogin}
-            loading={isLoading}
-            disabled={!username || !password}
-          />
-        </View>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Iniciar Sesión</Text>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Versión 1.0.0
-          </Text>
-        </View>
+            <Input
+              label="Correo electrónico"
+              placeholder="tu@email.com"
+              value={email}
+              onChangeText={(v) => { setEmail(v); setErrors((e) => ({ ...e, email: undefined })); }}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              editable={!isLoading}
+              error={errors.email}
+            />
+
+            <Input
+              label="Contraseña"
+              placeholder="••••••••"
+              value={password}
+              onChangeText={(v) => { setPassword(v); setErrors((e) => ({ ...e, password: undefined })); }}
+              secureTextEntry
+              autoComplete="password"
+              editable={!isLoading}
+              error={errors.password}
+            />
+
+            {error && (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorBannerText}>{error}</Text>
+              </View>
+            )}
+
+            <Button
+              title="Iniciar Sesión"
+              onPress={handleLogin}
+              loading={isLoading}
+              disabled={!email || !password || isLoading}
+            />
+          </View>
+
+          <Text style={styles.version}>v1.0.0</Text>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+const BRAND_GREEN = '#2D6A4F';
+const SURFACE = '#F8FAF9';
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
+    backgroundColor: BRAND_GREEN,
   },
-  content: {
+  keyboardView: {
     flex: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
   },
-  header: {
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.lg,
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.xl,
+    justifyContent: 'center',
   },
-  title: {
-    ...Typography.h1,
-    color: Colors.light.primary,
+  topSection: {
+    alignItems: 'center',
+    paddingTop: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  logoWrapper: {
+    width: 120,
+    height: 120,
+    borderRadius: BorderRadius.full,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logo: {
+    width: 96,
+    height: 96,
+  },
+  appName: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1,
     marginBottom: Spacing.xs,
   },
-  subtitle: {
-    ...Typography.bodySmall,
-    color: Colors.light.placeholder,
+  tagline: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.75)',
+    fontWeight: '500',
+    letterSpacing: 0.5,
   },
-  form: {
+  card: {
+    backgroundColor: SURFACE,
+    borderRadius: 24,
+    padding: Spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  cardTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: BRAND_GREEN,
     marginBottom: Spacing.lg,
+    textAlign: 'center',
   },
-  errorContainer: {
+  errorBanner: {
     backgroundColor: '#FFE5E5',
-    borderRadius: 8,
+    borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     marginBottom: Spacing.md,
     borderLeftWidth: 4,
     borderLeftColor: Colors.light.danger,
   },
-  errorMessage: {
+  errorBannerText: {
     color: Colors.light.danger,
     ...Typography.bodySmall,
   },
-  footer: {
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  footerText: {
-    color: Colors.light.placeholder,
-    ...Typography.bodySmall,
+  version: {
+    textAlign: 'center',
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+    marginTop: Spacing.sm,
   },
 });

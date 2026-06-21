@@ -1,12 +1,11 @@
 import api from './api';
 import {
   Mortandad,
-  MortandadFormData,
   Categoria,
   CausaMortandad,
   Potrero,
   Propietario,
-} from '@types/index';
+} from '@/types/index';
 
 export const mortandadService = {
   async crear(data: FormData): Promise<Mortandad> {
@@ -61,7 +60,7 @@ export const mortandadService = {
     }
   },
 
-  private handleError(error: any) {
+  handleError(error: any) {
     if (error.response?.data?.message) {
       return new Error(error.response.data.message);
     }

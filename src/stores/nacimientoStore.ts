@@ -1,0 +1,54 @@
+import { create } from 'zustand';
+import { Nacimiento } from '@/types/index';
+import { nacimientoService } from '@services/nacimiento';
+
+interface NacimientoStore {
+  nacimientos: Nacimiento[];
+  isLoading: boolean;
+  error: string | null;
+  cargar: () => Promise<void>;
+  crear: (data: object) => Promise<void>;
+  eliminar: (id: string) => Promise<void>;
+  setError: (error: string | null) => void;
+}
+
+export const useNacimientoStore = create<NacimientoStore>((set) => ({
+  nacimientos: [],
+  isLoading: false,
+  error: null,
+
+  cargar: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const nacimientos = await nacimientoService.listar();
+      set({ nacimientos, isLoading: false });
+    } catch (error) {
+      console.error('[nacimientoStore] cargar error:', error);
+      set({ error: error instanceof Error ? error.message : 'Error al cargar nacimientos', isLoading: false });
+    }
+  },
+
+  crear: async (data: object) => {
+    set({ isLoading: true, error: null });
+    try {
+      const nuevo = await nacimientoService.crear(data);
+      set((state) => ({ nacimientos: [nuevo, ...state.nacimientos], isLoading: false }));
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Error al crear nacimiento', isLoading: false });
+      throw error;
+    }
+  },
+
+  eliminar: async (id: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await nacimientoService.eliminar(id);
+      set((state) => ({ nacimientos: state.nacimientos.filter((n) => n.id !== id), isLoading: false }));
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : 'Error al eliminar', isLoading: false });
+      throw error;
+    }
+  },
+
+  setError: (error) => set({ error }),
+}));

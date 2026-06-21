@@ -1,6 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { LoginRequest, LoginResponse } from '@types/index';
+import { LoginRequest, LoginResponse } from '@/types/index';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
 
@@ -14,7 +14,7 @@ export const authService = {
 
       if (response.data.token) {
         await AsyncStorage.setItem('auth_token', response.data.token);
-        await AsyncStorage.setItem('usuario', JSON.stringify(response.data.usuario));
+        await AsyncStorage.setItem('usuario', JSON.stringify(response.data.user));
       }
 
       return response.data;
@@ -62,7 +62,7 @@ export const authService = {
     }
   },
 
-  private handleError(error: any) {
+  handleError(error: any) {
     if (axios.isAxiosError(error)) {
       return new Error(
         error.response?.data?.message || error.message || 'Error de autenticación'
