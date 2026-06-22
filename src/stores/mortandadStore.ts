@@ -7,6 +7,9 @@ import {
   potreroService,
   propietarioService,
 } from '@services/mortandad';
+import { enqueue } from '@services/offlineQueue';
+import { saveCache, loadCache } from '@services/dataCache';
+import { useNetworkStore } from './networkStore';
 
 interface MortandadStore {
   mortandades: Mortandad[];
@@ -19,7 +22,7 @@ interface MortandadStore {
 
   // Mortandades
   cargarMortandades: () => Promise<void>;
-  crearMortandad: (data: FormData) => Promise<void>;
+  crearMortandad: (data: Record<string, any>) => Promise<void>;
   actualizarMortandad: (id: string, data: FormData) => Promise<void>;
   eliminarMortandad: (id: string) => Promise<void>;
 
@@ -43,6 +46,7 @@ export const useMortandadStore = create<MortandadStore>((set) => ({
   error: null,
 
   cargarMortandades: async () => {
+    if (!useNetworkStore.getState().isOnline) return;
     set({ isLoading: true, error: null });
     try {
       const mortandades = await mortandadService.listar();
@@ -53,14 +57,19 @@ export const useMortandadStore = create<MortandadStore>((set) => ({
     }
   },
 
-  crearMortandad: async (data: FormData) => {
+  crearMortandad: async (data: Record<string, any>) => {
+    const { isOnline, refreshPendingCount } = useNetworkStore.getState();
+    if (!isOnline) {
+      await enqueue({ module: 'mortandad', endpoint: '/mortandad', method: 'POST', body: data, isFormData: true });
+      await refreshPendingCount();
+      return;
+    }
     set({ isLoading: true, error: null });
     try {
       const nuevaMortandad = await mortandadService.crear(data);
       set((state) => ({
         mortandades: [nuevaMortandad, ...state.mortandades],
       }));
-      // Recarga categorías para reflejar el decremento que hace el backend
       const categorias = await categoriaService.listar();
       set({ categorias, isLoading: false });
     } catch (error) {
@@ -101,50 +110,96 @@ export const useMortandadStore = create<MortandadStore>((set) => ({
   },
 
   cargarCategorias: async () => {
+    if (!useNetworkStore.getState().isOnline) {
+      const cached = await loadCache<Categoria[]>('categorias');
+      if (cached) set({ categorias: cached });
+      return;
+    }
     try {
       const categorias = await categoriaService.listar();
       set({ categorias });
+      await saveCache('categorias', categorias);
     } catch (error) {
       console.error('Error al cargar categorías:', error);
     }
   },
 
   cargarCausasMortandad: async () => {
+    if (!useNetworkStore.getState().isOnline) {
+      const cached = await loadCache<CausaMortandad[]>('causasMortandad');
+      if (cached) set({ causasMortandad: cached });
+      return;
+    }
     try {
       const causasMortandad = await causaMortandadService.listar();
       set({ causasMortandad });
+      await saveCache('causasMortandad', causasMortandad);
     } catch (error) {
       console.error('Error al cargar causas de mortandad:', error);
     }
   },
 
   cargarPotreros: async () => {
+    if (!useNetworkStore.getState().isOnline) {
+      const cached = await loadCache<Potrero[]>('potreros');
+      if (cached) set({ potreros: cached });
+      return;
+    }
     try {
       const potreros = await potreroService.listar();
       set({ potreros });
+      await saveCache('potreros', potreros);
     } catch (error) {
       console.error('Error al cargar potreros:', error);
     }
   },
 
   cargarPropietarios: async () => {
+    if (!useNetworkStore.getState().isOnline) {
+      const cached = await loadCache<Propietario[]>('propietarios');
+      if (cached) set({ propietarios: cached });
+      return;
+    }
     try {
       const propietarios = await propietarioService.listar();
       set({ propietarios });
+      await saveCache('propietarios', propietarios);
     } catch (error) {
       console.error('Error al cargar propietarios:', error);
     }
   },
 
   cargarTodo: async () => {
+    if (!useNetworkStore.getState().isOnline) {
+      const [categorias, causasMortandad, potreros, propietarios] = await Promise.all([
+        loadCache<Categoria[]>('categorias'),
+        loadCache<CausaMortandad[]>('causasMortandad'),
+        loadCache<Potrero[]>('potreros'),
+        loadCache<Propietario[]>('propietarios'),
+      ]);
+      set({
+        ...(categorias && { categorias }),
+        ...(causasMortandad && { causasMortandad }),
+        ...(potreros && { potreros }),
+        ...(propietarios && { propietarios }),
+      });
+      return;
+    }
     set({ isLoading: true });
     try {
+      const [mortandades, categorias, causasMortandad, potreros, propietarios] = await Promise.all([
+        mortandadService.listar(),
+        categoriaService.listar(),
+        causaMortandadService.listar(),
+        potreroService.listar(),
+        propietarioService.listar(),
+      ]);
+      set({ mortandades, categorias, causasMortandad, potreros, propietarios });
       await Promise.all([
-        mortandadService.listar().then((mortandades) => set({ mortandades })),
-        categoriaService.listar().then((categorias) => set({ categorias })),
-        causaMortandadService.listar().then((causasMortandad) => set({ causasMortandad })),
-        potreroService.listar().then((potreros) => set({ potreros })),
-        propietarioService.listar().then((propietarios) => set({ propietarios })),
+        saveCache('categorias', categorias),
+        saveCache('causasMortandad', causasMortandad),
+        saveCache('potreros', potreros),
+        saveCache('propietarios', propietarios),
       ]);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Error al cargar datos';

@@ -9,7 +9,7 @@
     "splash": {
       "image": "./src/assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2D6A4F"
+      "backgroundColor": "#FFFFFF"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -21,7 +21,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#2D6A4F"
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.puraraz.mobile",
       "permissions": [

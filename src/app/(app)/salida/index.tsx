@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSalidaStore } from '@stores/salidaStore';
+import { useNetworkStore } from '@stores/networkStore';
+
 import { Colors, Spacing, Typography, BorderRadius } from '@utils/theme';
 import { Plus } from 'lucide-react-native';
 import { format } from 'date-fns';
@@ -10,8 +12,14 @@ import { es } from 'date-fns/locale';
 export default function SalidaListScreen() {
   const router = useRouter();
   const { salidas, isLoading, cargar } = useSalidaStore();
+  const { pendingOperations } = useNetworkStore();
+  const pending = pendingOperations.filter((op) => op.module === 'salida');
 
   useEffect(() => { cargar(); }, []);
+
+  const formatFecha = (fecha: string) => {
+    try { return format(new Date(fecha), 'dd/MM/yyyy', { locale: es }); } catch { return fecha; }
+  };
 
   return (
     <View style={styles.container}>
@@ -22,16 +30,45 @@ export default function SalidaListScreen() {
           data={salidas}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
-          ListEmptyComponent={<Text style={styles.empty}>No hay salidas registradas</Text>}
+          ListEmptyComponent={
+            pending.length === 0
+              ? <Text style={styles.empty}>No hay salidas registradas</Text>
+              : null
+          }
+          ListHeaderComponent={
+            pending.length > 0 ? (
+              <>
+                {pending.map((op) => (
+                  <View key={op.id} style={[styles.card, styles.cardPending]}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardTitle}>Salida</Text>
+                      <Text style={styles.date}>{formatFecha(op.body.fecha)}</Text>
+                    </View>
+                    {op.body.NombreEstanciaSalida ? (
+                      <Text style={styles.cardText}>Destino: {op.body.NombreEstanciaSalida}</Text>
+                    ) : null}
+                    <Text style={styles.cardText}>
+                      Items: {Array.isArray(op.body.items) ? op.body.items.length : 0} categoría(s)
+                    </Text>
+                    <Text style={styles.pendingLabel}>Pendiente de sincronización</Text>
+                  </View>
+                ))}
+              </>
+            ) : null
+          }
           renderItem={({ item }) => (
             <View style={styles.card}>
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>Salida</Text>
-                <Text style={styles.date}>{format(new Date(item.fecha), 'dd/MM/yyyy', { locale: es })}</Text>
+                <Text style={styles.date}>{formatFecha(item.fecha)}</Text>
               </View>
-              {item.NombreEstanciaSalida && <Text style={styles.cardText}>Destino: {item.NombreEstanciaSalida}</Text>}
+              {item.NombreEstanciaSalida && (
+                <Text style={styles.cardText}>Destino: {item.NombreEstanciaSalida}</Text>
+              )}
               <Text style={styles.cardText}>Items: {item.items?.length ?? 0} categoría(s)</Text>
-              <Text style={styles.cardText}>Total animales: {item.items?.reduce((s, i) => s + i.cantidad, 0) ?? 0}</Text>
+              <Text style={styles.cardText}>
+                Total animales: {item.items?.reduce((s, i) => s + i.cantidad, 0) ?? 0}
+              </Text>
             </View>
           )}
         />
@@ -48,10 +85,52 @@ const styles = StyleSheet.create({
   loader: { flex: 1 },
   list: { padding: Spacing.md },
   empty: { ...Typography.body, color: Colors.light.placeholder, textAlign: 'center', marginTop: Spacing.xl },
-  card: { backgroundColor: '#fff', borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.sm, borderWidth: 1, borderColor: Colors.light.border },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  cardPending: {
+    backgroundColor: '#FFFBF0',
+    borderColor: '#E8D080',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   cardTitle: { ...Typography.body, fontWeight: '600', color: Colors.light.text },
   date: { ...Typography.bodySmall, color: Colors.light.placeholder },
   cardText: { ...Typography.bodySmall, color: Colors.light.placeholder, marginBottom: 2 },
-  fab: { position: 'absolute', right: Spacing.lg, bottom: Spacing.lg, backgroundColor: Colors.light.primary, width: 56, height: 56, borderRadius: 28, justifyContent: 'center', alignItems: 'center', elevation: 4 },
+  pendingLabel: {
+    fontSize: 11,
+    color: '#B8860B',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  syncRow: {
+    alignItems: 'flex-end',
+    marginTop: 4,
+  },
+  fab: {
+    position: 'absolute',
+    right: Spacing.lg,
+    bottom: Spacing.lg,
+    backgroundColor: Colors.light.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+  },
 });

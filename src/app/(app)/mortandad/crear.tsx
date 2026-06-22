@@ -127,13 +127,7 @@ export default function CrearMortandadScreen() {
 
   const handleSubmit = async () => {
     try {
-      const form = new FormData();
-      (Object.keys(formData) as (keyof typeof formData)[]).forEach((k) => form.append(k, formData[k]));
-      (Object.keys(fotos) as (keyof Fotos)[]).forEach((k) => {
-        const uri = fotos[k];
-        if (uri) form.append(k, { uri, type: 'image/jpeg', name: `${k}.jpg` } as any);
-      });
-      await crearMortandad(form);
+      await crearMortandad({ ...formData, ...fotos });
       Alert.alert('Éxito', 'Mortandad registrada correctamente', [{ text: 'OK', onPress: () => router.back() }]);
     } catch (err) {
       Alert.alert('Error', err instanceof Error ? err.message : 'Error al registrar');

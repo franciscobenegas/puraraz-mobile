@@ -8,12 +8,19 @@ import {
 } from '@/types/index';
 
 export const mortandadService = {
-  async crear(data: FormData): Promise<Mortandad> {
+  async crear(data: Record<string, any>): Promise<Mortandad> {
     try {
-      const response = await api.post<Mortandad>('/mortandad', data, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const form = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') return;
+        if (key.startsWith('foto') && typeof value === 'string') {
+          form.append(key, { uri: value, type: 'image/jpeg', name: `${key}.jpg` } as any);
+        } else {
+          form.append(key, String(value));
+        }
+      });
+      const response = await api.post<Mortandad>('/mortandad', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
       return response.data;
     } catch (error) {

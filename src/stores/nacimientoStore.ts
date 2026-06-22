@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Nacimiento } from '@/types/index';
 import { nacimientoService } from '@services/nacimiento';
+import { enqueue } from '@services/offlineQueue';
+import { useNetworkStore } from './networkStore';
 
 interface NacimientoStore {
   nacimientos: Nacimiento[];
@@ -18,6 +20,7 @@ export const useNacimientoStore = create<NacimientoStore>((set) => ({
   error: null,
 
   cargar: async () => {
+    if (!useNetworkStore.getState().isOnline) return;
     set({ isLoading: true, error: null });
     try {
       const nacimientos = await nacimientoService.listar();
@@ -29,6 +32,12 @@ export const useNacimientoStore = create<NacimientoStore>((set) => ({
   },
 
   crear: async (data: object) => {
+    const { isOnline, refreshPendingCount } = useNetworkStore.getState();
+    if (!isOnline) {
+      await enqueue({ module: 'nacimiento', endpoint: '/nacimiento', method: 'POST', body: data as Record<string, any> });
+      await refreshPendingCount();
+      return;
+    }
     set({ isLoading: true, error: null });
     try {
       const nuevo = await nacimientoService.crear(data);

@@ -12,6 +12,8 @@ import {
 import { useRouter } from 'expo-router';
 import { useNacimientoStore } from '@stores/nacimientoStore';
 import { useMortandadStore } from '@stores/mortandadStore';
+import { useNetworkStore } from '@stores/networkStore';
+
 import { Spacing, Typography, BorderRadius } from '@utils/theme';
 import { Plus, Trash2, RefreshCw } from 'lucide-react-native';
 import { format } from 'date-fns';
@@ -24,6 +26,8 @@ export default function NacimientoListScreen() {
   const router = useRouter();
   const { nacimientos, isLoading, error, cargar, eliminar } = useNacimientoStore();
   const { propietarios, potreros, cargarTodo } = useMortandadStore();
+  const { pendingOperations } = useNetworkStore();
+  const pending = pendingOperations.filter((op) => op.module === 'nacimiento');
 
   useEffect(() => {
     cargar();
@@ -32,6 +36,10 @@ export default function NacimientoListScreen() {
 
   const getPropietario = (id: string) => propietarios.find((p) => p.id === id)?.nombre ?? id;
   const getPotrero = (id: string) => potreros.find((p) => p.id === id)?.nombre ?? id;
+
+  const formatFecha = (fecha: string) => {
+    try { return format(new Date(fecha), 'dd/MM/yyyy', { locale: es }); } catch { return fecha; }
+  };
 
   const handleDelete = (id: string, label: string) => {
     Alert.alert(
@@ -84,7 +92,38 @@ export default function NacimientoListScreen() {
           <RefreshControl refreshing={isLoading} onRefresh={cargar} colors={[BRAND_GREEN]} tintColor={BRAND_GREEN} />
         }
         ListEmptyComponent={
-          <Text style={styles.empty}>No hay nacimientos registrados</Text>
+          pending.length === 0
+            ? <Text style={styles.empty}>No hay nacimientos registrados</Text>
+            : null
+        }
+        ListHeaderComponent={
+          pending.length > 0 ? (
+            <>
+              {pending.map((op) => (
+                <View key={op.id} style={[styles.card, styles.cardPending]}>
+                  <View style={styles.cardBody}>
+                    <View style={styles.cardHeader}>
+                      <Text style={styles.cardTitle}>
+                        {op.body.sexo} — {op.body.pelaje}
+                      </Text>
+                      <Text style={styles.badge}>{op.body.sexo === 'Macho' ? '♂' : '♀'}</Text>
+                    </View>
+                    <Text style={styles.cardText}>Fecha: {formatFecha(op.body.fecha)}</Text>
+                    {op.body.numeroTernero ? (
+                      <Text style={styles.cardText}>Ternero Nº: {op.body.numeroTernero}</Text>
+                    ) : null}
+                    {op.body.numeroVaca ? (
+                      <Text style={styles.cardText}>Vaca Nº: {op.body.numeroVaca}</Text>
+                    ) : null}
+                    {op.body.peso ? (
+                      <Text style={styles.cardText}>Peso: {op.body.peso} kg</Text>
+                    ) : null}
+                    <Text style={styles.pendingLabel}>Pendiente de sincronización</Text>
+                  </View>
+                </View>
+              ))}
+            </>
+          ) : null
         }
         renderItem={({ item }) => {
           const label = [item.sexo, item.pelaje, item.numeroTernero].filter(Boolean).join(' — ');
@@ -98,7 +137,7 @@ export default function NacimientoListScreen() {
                   <Text style={styles.badge}>{item.sexo === 'Macho' ? '♂' : '♀'}</Text>
                 </View>
                 <Text style={styles.cardText}>
-                  Fecha: {format(new Date(item.fecha), 'dd/MM/yyyy', { locale: es })}
+                  Fecha: {formatFecha(item.fecha)}
                 </Text>
                 {item.numeroTernero && (
                   <Text style={styles.cardText}>Ternero Nº: {item.numeroTernero}</Text>
@@ -138,10 +177,7 @@ export default function NacimientoListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAF9',
-  },
+  container: { flex: 1, backgroundColor: '#F8FAF9' },
   center: {
     flex: 1,
     justifyContent: 'center',
@@ -149,22 +185,9 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     gap: Spacing.md,
   },
-  list: {
-    padding: Spacing.md,
-    paddingBottom: 80,
-  },
-  empty: {
-    ...Typography.body,
-    color: '#888',
-    textAlign: 'center',
-    marginTop: Spacing.xl,
-  },
-  errorText: {
-    ...Typography.body,
-    color: BRAND_RED,
-    textAlign: 'center',
-    marginBottom: Spacing.sm,
-  },
+  list: { padding: Spacing.md, paddingBottom: 80 },
+  empty: { ...Typography.body, color: '#888', textAlign: 'center', marginTop: Spacing.xl },
+  errorText: { ...Typography.body, color: BRAND_RED, textAlign: 'center', marginBottom: Spacing.sm },
   retryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -174,11 +197,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     gap: Spacing.xs,
   },
-  retryBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 14,
-  },
+  retryBtnText: { color: '#FFFFFF', fontWeight: '600', fontSize: 14 },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.md,
@@ -194,32 +213,36 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
-  cardBody: {
-    flex: 1,
+  cardPending: {
+    backgroundColor: '#FFFBF0',
+    borderColor: '#E8D080',
   },
+  cardBody: { flex: 1 },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.xs,
   },
-  cardTitle: {
-    ...Typography.body,
-    fontWeight: '600',
-    color: '#1A1A1A',
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  badge: {
-    fontSize: 18,
+  cardTitle: { ...Typography.body, fontWeight: '600', color: '#1A1A1A' },
+  badge: { fontSize: 18 },
+  cardText: { ...Typography.bodySmall, color: '#666', marginBottom: 2 },
+  pendingLabel: {
+    fontSize: 11,
+    color: '#B8860B',
+    fontStyle: 'italic',
+    marginTop: 4,
   },
-  cardText: {
-    ...Typography.bodySmall,
-    color: '#666',
-    marginBottom: 2,
+  syncRow: {
+    alignItems: 'flex-end',
+    marginTop: 4,
   },
-  deleteBtn: {
-    marginLeft: Spacing.sm,
-    padding: 4,
-  },
+  deleteBtn: { marginLeft: Spacing.sm, padding: 4 },
   fab: {
     position: 'absolute',
     right: Spacing.lg,

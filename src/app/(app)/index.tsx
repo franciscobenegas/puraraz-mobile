@@ -17,7 +17,8 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@stores/authStore';
 import { useMortandadStore } from '@stores/mortandadStore';
 import { Spacing, BorderRadius, Typography } from '@utils/theme';
-import { Menu, X, LogOut, Skull, Baby, Download, Upload, Scale } from 'lucide-react-native';
+import { Menu, X, LogOut, HeartOff, Download, Upload, Weight } from 'lucide-react-native';
+import { CowIcon } from '@components/CowIcon';
 
 const BRAND_GREEN = '#2D6A4F';
 const BRAND_GREEN_MID = '#40916C';
@@ -27,11 +28,11 @@ const DRAWER_WIDTH = 300;
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const NAV_ITEMS = [
-  { icon: Skull,    label: 'Mortandad',  route: '/(app)/mortandad'  as const },
-  { icon: Baby,     label: 'Nacimiento', route: '/(app)/nacimiento' as const },
-  { icon: Download, label: 'Entrada',    route: '/(app)/entrada'    as const },
-  { icon: Upload,   label: 'Salida',     route: '/(app)/salida'     as const },
-  { icon: Scale,    label: 'Pesaje',     route: '/(app)/pesaje'     as const },
+  { icon: HeartOff,    label: 'Mortandad',  route: '/(app)/mortandad'  as const },
+  { icon: CowIcon,     label: 'Nacimiento', route: '/(app)/nacimiento' as const },
+  { icon: Download,    label: 'Entrada',    route: '/(app)/entrada'    as const },
+  { icon: Upload,      label: 'Salida',     route: '/(app)/salida'     as const },
+  { icon: Weight,      label: 'Pesaje',     route: '/(app)/pesaje'     as const },
 ];
 
 export default function DashboardScreen() {
@@ -99,6 +100,9 @@ export default function DashboardScreen() {
   };
 
   const totalAnimales = categorias.reduce((sum, c) => sum + (c.cantidad ?? 0), 0);
+  const tasaMortandad = totalAnimales > 0
+    ? ((mortandades.length / totalAnimales) * 100).toFixed(2)
+    : '0.00';
 
   return (
     <SafeAreaView style={styles.root}>
@@ -128,8 +132,8 @@ export default function DashboardScreen() {
             <Text style={styles.statLabel}>Total{'\n'}Animales</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: BRAND_GREEN_MID }]}>
-            <Text style={styles.statNumber}>{categorias.length}</Text>
-            <Text style={styles.statLabel}>Clasifi-{'\n'}caciones</Text>
+            <Text style={styles.statNumber}>{tasaMortandad}%</Text>
+            <Text style={styles.statLabel}>Tasa{'\n'}Mortandad</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: BRAND_RED }]}>
             <Text style={styles.statNumber}>{mortandades.length}</Text>

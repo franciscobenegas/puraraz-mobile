@@ -16,6 +16,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useMortandadStore } from '@stores/mortandadStore';
+import { useNetworkStore } from '@stores/networkStore';
+
 import { Colors, Spacing, Typography, BorderRadius } from '@utils/theme';
 import { Plus, Trash2, X, Camera } from 'lucide-react-native';
 
@@ -27,6 +29,8 @@ export default function MortandadesListScreen() {
   const router = useRouter();
   const { mortandades, potreros, cargarMortandades, cargarPotreros, isLoading, eliminarMortandad } =
     useMortandadStore();
+  const { pendingOperations } = useNetworkStore();
+  const pending = pendingOperations.filter((op) => op.module === 'mortandad');
 
   const [fotosModal, setFotosModal] = useState<{ visible: boolean; fotos: string[] }>({
     visible: false,
@@ -86,16 +90,12 @@ export default function MortandadesListScreen() {
         <Text style={styles.cardText}>Potrero: {getPotrero(item.potreroId)}</Text>
         {item.ubicacionGps ? (
           <TouchableOpacity onPress={() => openMaps(item.ubicacionGps)}>
-            <Text style={[styles.cardText, styles.gpsLink]}>
-              📍 {item.ubicacionGps}
-            </Text>
+            <Text style={[styles.cardText, styles.gpsLink]}>📍 {item.ubicacionGps}</Text>
           </TouchableOpacity>
         ) : null}
         {item.foto1 && (
           <TouchableOpacity onPress={() => openFotos(item)}>
-            <Text style={[styles.cardText, styles.fotosLink]}>
-              📷 Ver fotos
-            </Text>
+            <Text style={[styles.cardText, styles.fotosLink]}>📷 Ver fotos</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -109,24 +109,50 @@ export default function MortandadesListScreen() {
     </View>
   );
 
+  const renderPendingCard = (op: (typeof pending)[0]) => (
+    <View key={op.id} style={[styles.card, styles.cardPending]}>
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle}>Animal: {op.body.numeroAnimal}</Text>
+        <Text style={styles.cardText}>
+          Fecha: {new Date(op.body.fecha).toLocaleDateString()}
+        </Text>
+        {op.body.potreroId ? (
+          <Text style={styles.cardText}>Potrero: {getPotrero(op.body.potreroId)}</Text>
+        ) : null}
+        {op.body.ubicacionGps ? (
+          <Text style={styles.cardText}>📍 {op.body.ubicacionGps}</Text>
+        ) : null}
+        <Text style={styles.pendingLabel}>Pendiente de sincronización</Text>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       {isLoading ? (
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={BRAND_GREEN} />
         </View>
-      ) : mortandades.length > 0 ? (
+      ) : (
         <FlatList
           data={mortandades}
           keyExtractor={(item) => item.id}
           renderItem={renderMortandadCard}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            pending.length > 0 ? (
+              <>{pending.map(renderPendingCard)}</>
+            ) : null
+          }
+          ListEmptyComponent={
+            pending.length === 0 ? (
+              <View style={styles.centerContent}>
+                <Text style={styles.emptyText}>No hay mortandades registradas</Text>
+              </View>
+            ) : null
+          }
         />
-      ) : (
-        <View style={styles.centerContent}>
-          <Text style={styles.emptyText}>No hay mortandades registradas</Text>
-        </View>
       )}
 
       <TouchableOpacity
@@ -242,6 +268,26 @@ const styles = StyleSheet.create({
     color: BRAND_GREEN,
     textDecorationLine: 'underline',
     fontWeight: '500',
+  },
+  cardRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  cardPending: {
+    backgroundColor: '#FFFBF0',
+    borderColor: '#E8D080',
+  },
+  pendingLabel: {
+    fontSize: 11,
+    color: '#B8860B',
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  syncRow: {
+    alignItems: 'flex-end',
+    marginTop: 4,
   },
   deleteBtn: {
     marginLeft: Spacing.sm,
